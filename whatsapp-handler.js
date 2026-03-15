@@ -208,11 +208,10 @@ export async function handleWhatsAppMessage(message, phoneNumber) {
     } else {
       // No answer found - use appropriate error message
       if (responseLanguage === 'marathi') {
-        replyMessage = 'मला समजत नाही। कृपया दोबारा विचारा।';
-      } else {
-        replyMessage = "I don't understand. Please ask again.";
-      }
-    }
+  replyMessage = 'हा विषय आमच्या ज्ञान संग्रहात उपलब्ध नाही। कृपया White Gold Trust ने दस्तऐवजित केलेल्या विषयांबद्दल विचारा।';
+} else {
+  replyMessage = "This topic is not available in our knowledge base. Please ask about topics documented by White Gold Trust.";
+}
 
     // Send reply via Twilio
     console.log(`📤 Sending reply to ${phoneNumber}...`);

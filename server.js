@@ -139,7 +139,7 @@ function detectLanguage(text) {
     const hasHindi = hindiWords.some(word => text.includes(word));
     if (hasHindi) {
       console.log("🔤 Detected: HINDI (Devanagari + Hindi words)");
-      return "hindi";
+      return "marathi";
     }
     console.log("🔤 Detected: MARATHI (Devanagari script)");
     return "marathi";
@@ -177,7 +177,7 @@ app.get("/api/health", (req, res) => {
     status: "ok",
     method: "Raw Transcript Search",
     engine: "GROQ (openai/gpt-oss-120b) - FREE",
-    languages: "Marathi (Script + Roman + Code-switch), Hindi, English",
+    languages: "Marathi (Script + Roman + Code-switch), English",
     accuracy: "95%+",
     cost: "$0 FOREVER",
     port: PORT,
@@ -240,13 +240,12 @@ async function findRelevantPassage(query, transcripts, language) {
     if (query.length < 5) {
       console.log("⚠️ Question too vague");
       const vagueMsgs = {
-        marathi: "आपल्या प्रश्नमध्ये अधिक माहिती आवश्यक आहे।",
-        hindi: "आपके प्रश्न में अधिक जानकारी आवश्यक है।",
-        english: "Please provide more details in your question."
+        marathi: "कृपया अधिक तपशील सह प्रश्न विचारा। उदाहरण: संत्रा बागेत पहिलं पाणी कसे द्यावं?",
+        english: "Please ask in more detail. Example: How to water citrus garden for the first time?"
       };
       return {
         success: false,
-        message: vagueMsgs[language],
+        message: vagueMsgs[language] || vagueMsgs.english,
       };
     }
 
@@ -374,12 +373,11 @@ app.post("/api/search-knowledge", async (req, res) => {
       console.log("⚠️ No transcripts");
       const noDataMsgs = {
         marathi: "कृपया पहले ट्रांसक्रिप्ट अपलोड करें।",
-        hindi: "कृपया पहले ट्रांसक्रिप्ट अपलोड करें।",
         english: "Please upload transcripts first."
       };
       return res.json({
         success: false,
-        message: noDataMsgs[language],
+        message: noDataMsgs[language] || noDataMsgs.english,
       });
     }
 
@@ -390,13 +388,13 @@ app.post("/api/search-knowledge", async (req, res) => {
     if (!passageResult) {
       console.log("❌ No answer found");
       const notFoundMsgs = {
-        marathi: "क्षमा करें, इस बारे में जानकारी नहीं मिली।",
-        hindi: "क्षमा करें, इस बारे में जानकारी नहीं मिली।",
-        english: "Sorry, information not found."
+        marathi: "हा विषय आमच्या ज्ञान संग्रहात उपलब्ध नाही। कृपया White Gold Trust ने दस्तऐवजित केलेल्या विषयांबद्दल विचारा - जसे संत्रा/मोसंबी पाणी देणे, खते, रोग नियंत्रण, किंवा फवारणी। धन्यवाद!",
+        english: "This topic is not available in our knowledge base. Please ask about topics documented by White Gold Trust - such as citrus watering, fertilization, pest management, or spraying techniques. Thank you!"
       };
       return res.json({
         success: false,
-        message: notFoundMsgs[language],
+        answer: notFoundMsgs[language] || notFoundMsgs.english,
+        language: language,
       });
     }
 
@@ -408,9 +406,14 @@ app.post("/api/search-knowledge", async (req, res) => {
     const formattedAnswer = await formatPassage(passageResult, language);
 
     if (!formattedAnswer) {
+      const errorMsgs = {
+        marathi: "उत्तर तयार करण्यात त्रुटी आली।",
+        english: "Error preparing answer."
+      };
       return res.json({
         success: false,
-        message: "उत्तर तैयार करने में त्रुटि।",
+        answer: errorMsgs[language] || errorMsgs.english,
+        language: language,
       });
     }
 
@@ -418,12 +421,20 @@ app.post("/api/search-knowledge", async (req, res) => {
     res.json({
       success: true,
       answer: formattedAnswer,
-      source: "गजानन जाधव (Groq - FREE)",
-      language: language.toUpperCase(),
+      language: language,
     });
   } catch (error) {
     console.error("❌ Error:", error);
-    res.status(500).json({ error: error.message });
+    const language = detectLanguage(req.body?.query || "");
+    const errorMsgs = {
+      marathi: "एक त्रुटी आली। कृपया दोबारा प्रयत्न करा।",
+      english: "An error occurred. Please try again."
+    };
+    res.status(500).json({ 
+      error: error.message,
+      answer: errorMsgs[language] || errorMsgs.english,
+      language: language
+    });
   }
 });
 
@@ -456,7 +467,7 @@ app.listen(PORT, () => {
 ║  Port:              ${PORT}
 ║  Engine:            GROQ (openai/gpt-oss-120b) - FREE ✅
 ║  Languages:         Marathi (Script + Roman + Code-switch) 🔤  ║
-║                     Hindi, English 🌐
+║                     English 🌐
 ║  Translation:       Roman → Devanagari ✅
 ║  Model:             openai/gpt-oss-120b (Powerful)
 ║  Context:           3000 chars (comprehensive)
