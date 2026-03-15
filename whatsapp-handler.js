@@ -181,10 +181,10 @@ export async function handleWhatsAppMessage(message, phoneNumber) {
     console.log(`📤 Sending reply to ${phoneNumber}...`);
     
     const messageResult = await client.messages.create({
-      from: `whatsapp:${twilioPhone}`,
-      to: `whatsapp:${phoneNumber}`,
-      body: replyMessage,
-    });
+  from: `whatsapp:${twilioPhone}`,
+  to: `whatsapp:${phoneNumber}`,
+  body: replyMessage,
+});
 
     console.log(`✅ Message sent! SID: ${messageResult.sid}`);
 
