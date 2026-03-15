@@ -184,14 +184,13 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-app.post("/whatsapp", async (req, res) => {
+app.post("/webhook", async (req, res) => {
   const msg = req.body.Body || "";
   const phone = (req.body.From || "").replace("whatsapp:", "");
   console.log(`📱 Message from ${phone}: ${msg}`);
   await handleWhatsAppMessage(msg, phone);
   res.status(200).send("OK");
 });
-
 app.post("/api/upload-transcript", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
