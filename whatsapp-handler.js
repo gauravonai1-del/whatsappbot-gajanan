@@ -180,11 +180,16 @@ export async function handleWhatsAppMessage(message, phoneNumber) {
     // Send reply
     console.log(`📤 Sending reply to ${phoneNumber}...`);
     
+    // Strip "whatsapp:" prefix if present
+    const cleanPhoneNumber = phoneNumber.includes("whatsapp:") 
+      ? phoneNumber.replace("whatsapp:", "") 
+      : phoneNumber;
+    
     const messageResult = await client.messages.create({
-  from: `whatsapp:${twilioPhone}`,
-  to: `whatsapp:${phoneNumber}`,
-  body: replyMessage,
-});
+      from: `whatsapp:${twilioPhone}`,
+      to: `whatsapp:${cleanPhoneNumber}`,
+      body: replyMessage,
+    });
 
     console.log(`✅ Message sent! SID: ${messageResult.sid}`);
 
