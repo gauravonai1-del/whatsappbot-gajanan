@@ -2,7 +2,6 @@ import twilio from "twilio";
 
 // Roman Marathi to Devanagari conversion map
 const romanToDevanagariMap = {
-  // Common words
   'santra': 'संत्रा',
   'santara': 'संत्रा',
   'citrus': 'संत्रा',
@@ -31,8 +30,6 @@ const romanToDevanagariMap = {
   'khad': 'खाद',
   'jeev': 'जैव',
   'prakrit': 'प्राकृतिक',
-
-  // Common phrases
   'kaise': 'कसे',
   'kisne': 'किने',
   'kaun': 'कोण',
@@ -45,44 +42,38 @@ const romanToDevanagariMap = {
   'ke': 'चे',
   'mein': 'मध्ये',
   'chahiye': 'चाहिए',
-  'ke baag': 'चे बाग',
-  'kab dena': 'कधी देणे',
 };
 
-// Language detection
+// Language detection function
 function detectLanguage(text) {
   if (!text) return 'unknown';
 
-  // Check for Devanagari script (Marathi script)
+  // Check for Devanagari script
   const devanagariRegex = /[\u0900-\u097F]/g;
   if (devanagariRegex.test(text)) {
-    console.log('🔤 Detected: Marathi (Devanagari script)');
     return 'marathi-script';
   }
 
   // Check for Roman Marathi patterns
   const romanMarathiPatterns = [
-    /\bka\b/i,      // का
-    /\bkaise\b/i,   // कसे
-    /\bkonta\b/i,   // कोणता
-    /\bgheu\b/i,    // घेऊ
-    /\bpani\b/i,    // पाणी
-    /\bbaag\b/i,    // बाग
-    /\bkab\b/i,     // कधी
-    /\bdena\b/i,    // देणे
-    /\bkarna\b/i,   // करणे
+    /\bka\b/i,
+    /\bkaise\b/i,
+    /\bkonta\b/i,
+    /\bgheu\b/i,
+    /\bpani\b/i,
+    /\bbaag\b/i,
+    /\bkab\b/i,
+    /\bdena\b/i,
+    /\bkarna\b/i,
     /\bchahiye\b/i,
   ];
 
   const hasRomanMarathiWords = romanMarathiPatterns.some(pattern => pattern.test(text));
   
   if (hasRomanMarathiWords && /^[a-zA-Z\s?]*$/.test(text)) {
-    console.log('🔤 Detected: Roman Marathi');
     return 'roman-marathi';
   }
 
-  // Default to English
-  console.log('🔤 Detected: English');
   return 'english';
 }
 
@@ -92,7 +83,7 @@ function romanToDevanagari(text) {
 
   let result = text.toLowerCase();
 
-  // Multi-character patterns first (longer matches first)
+  // Multi-character patterns
   const multiCharPatterns = [
     { from: /kshan/g, to: 'क्षण' },
     { from: /shakh/g, to: 'शाख' },
@@ -115,73 +106,47 @@ function romanToDevanagari(text) {
   return result;
 }
 
-// Format Marathi answer
-function formatMarathiAnswer(answer) {
-  if (!answer || answer.trim() === '') {
-    return 'मला समजत नाही। कृपया दोबारा विचारा।';
-  }
-
-  // Ensure pure Marathi formatting
-  let formatted = answer
-    .replace(/मुझे/g, 'मला')
-    .replace(/समझ नहीं/g, 'समजत नाही')
-    .replace(/कृपया/g, 'कृपया');
-
-  return `💡 📌 उत्तर:\n${formatted}`;
-}
-
-// Format English answer
-function formatEnglishAnswer(answer) {
-  if (!answer || answer.trim() === '') {
-    return "I don't understand. Please ask again.";
-  }
-
-  return `💡 📌 Answer:\n${answer}`;
-}
-
+// Export the handler function
 export async function handleWhatsAppMessage(message, phoneNumber) {
   try {
     console.log(`💬 Processing message from ${phoneNumber}: ${message}`);
+    
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const twilioPhone = "+14155238886";
     
-    console.log(`🔍 Credentials check: SID=${accountSid ? "✅" : "❌"}, Token=${authToken ? "✅" : "❌"}, Phone=${twilioPhone ? "✅" : "❌"}`);
-    
     if (!accountSid || !authToken || !twilioPhone) {
-      console.error("❌ Missing Twilio credentials:", { accountSid: !!accountSid, authToken: !!authToken, twilioPhone: !!twilioPhone });
+      console.error("❌ Missing Twilio credentials");
       return;
     }
 
-    // Detect input language
+    // Detect language
     const detectedLanguage = detectLanguage(message);
+    console.log(`🔤 Detected language: ${detectedLanguage}`);
     
-    // Process message based on language
+    // Process message
     let searchQuery = message;
     let responseLanguage = 'english';
 
     if (detectedLanguage === 'marathi-script') {
-      // Marathi script input → search in Marathi
       searchQuery = message;
       responseLanguage = 'marathi';
-      console.log(`✅ Marathi script detected: "${message}"`);
+      console.log(`✅ Marathi script: "${message}"`);
     } else if (detectedLanguage === 'roman-marathi') {
-      // Roman Marathi input → convert to Devanagari → search in Marathi
       searchQuery = romanToDevanagari(message);
       responseLanguage = 'marathi';
       console.log(`🔄 Roman Marathi converted: "${message}" → "${searchQuery}"`);
     } else {
-      // English input → search in English
       searchQuery = message;
       responseLanguage = 'english';
-      console.log(`✅ English detected: "${message}"`);
+      console.log(`✅ English: "${message}"`);
     }
 
-    // Initialize Twilio client
+    // Initialize Twilio
     const client = twilio(accountSid, authToken);
     
     // Search knowledge base
-    console.log(`🔍 Searching knowledge base for: "${searchQuery}" (Language: ${responseLanguage})`);
+    console.log(`🔍 Searching: "${searchQuery}"`);
     
     const response = await fetch("http://127.0.0.1:3002/api/search-knowledge", {
       method: "POST",
@@ -189,31 +154,30 @@ export async function handleWhatsAppMessage(message, phoneNumber) {
       body: JSON.stringify({
         query: searchQuery,
         language: responseLanguage,
-        detectedLanguage: detectedLanguage,
       }),
     });
 
     const data = await response.json();
     console.log(`📊 Search result:`, data);
 
-    // Format response based on detected language
+    // Format response
     let replyMessage;
     
     if (data.success && data.answer && data.answer.trim()) {
       if (responseLanguage === 'marathi') {
-        replyMessage = formatMarathiAnswer(data.answer);
+        replyMessage = `💡 📌 उत्तर:\n${data.answer}`;
       } else {
-        replyMessage = formatEnglishAnswer(data.answer);
+        replyMessage = `💡 📌 Answer:\n${data.answer}`;
       }
     } else {
-      // No answer found - use appropriate error message
       if (responseLanguage === 'marathi') {
-  replyMessage = 'हा विषय आमच्या ज्ञान संग्रहात उपलब्ध नाही। कृपया White Gold Trust ने दस्तऐवजित केलेल्या विषयांबद्दल विचारा।';
-} else {
-  replyMessage = "This topic is not available in our knowledge base. Please ask about topics documented by White Gold Trust.";
-}
+        replyMessage = 'हा विषय आमच्या ज्ञान संग्रहात उपलब्ध नाही। कृपया White Gold Trust ने दस्तऐवजित केलेल्या विषयांबद्दल विचारा - जसे संत्रा/मोसंबी पाणी देणे, खते, रोग नियंत्रण, किंवा फवारणी। धन्यवाद!';
+      } else {
+        replyMessage = 'This topic is not available in our knowledge base. Please ask about topics documented by White Gold Trust - such as citrus watering, fertilizer, disease control, or spraying. Thank you!';
+      }
+    }
 
-    // Send reply via Twilio
+    // Send reply
     console.log(`📤 Sending reply to ${phoneNumber}...`);
     
     const messageResult = await client.messages.create({
@@ -225,7 +189,6 @@ export async function handleWhatsAppMessage(message, phoneNumber) {
     console.log(`✅ Message sent! SID: ${messageResult.sid}`);
 
   } catch (error) {
-    console.error(`❌ Error in handleWhatsAppMessage:`, error.message);
-    console.error(`Full error:`, error);
+    console.error(`❌ Error:`, error.message);
   }
 }
