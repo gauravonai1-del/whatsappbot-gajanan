@@ -21,7 +21,7 @@ export async function handleWhatsAppMessage(message, phoneNumber) {
     // Search knowledge base
     console.log(`🔍 Searching knowledge base for: "${message}"`);
     
-    const response = await fetch("http://localhost:3002/api/search-knowledge", {
+    const response = await fetch("/api/search-knowledge", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
